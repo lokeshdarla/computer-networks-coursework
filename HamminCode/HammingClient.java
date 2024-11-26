@@ -66,18 +66,18 @@ public class HammingClient {
       System.out.println("Generated Hamming Code: " + hammingCode);
 
       // Send correct data first
-      // System.out.println("Sending correct data...");
-      // writer.println(hammingCode);
-      // System.out.println("Server Response: " + reader.readLine());
+      System.out.println("Sending correct data...");
+      writer.println(hammingCode);
+      System.out.println("Server Response: " + reader.readLine());
 
       // Introduce error and send erroneous data
-      String erroneousData = introduceError(hammingCode, 5); // Flip 5th bit
-      System.out.println("Sending erroneous data: " + erroneousData);
-      writer.println(erroneousData);
+      // String erroneousData = introduceError(hammingCode, 5); // Flip 5th bit
+      // System.out.println("Sending erroneous data: " + erroneousData);
+      // writer.println(erroneousData);
 
-      // Read server response
-      String serverResponse = reader.readLine();
-      System.out.println("Server Response (Erroneous Data): " + serverResponse);
+      // // Read server response
+      // String serverResponse = reader.readLine();
+      // System.out.println("Server Response (Erroneous Data): " + serverResponse);
     } catch (IOException ex) {
       ex.printStackTrace();
     }
