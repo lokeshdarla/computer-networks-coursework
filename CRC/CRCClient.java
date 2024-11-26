@@ -2,35 +2,82 @@ package CRC;
 
 import java.io.*;
 import java.net.*;
-import java.util.zip.CRC32;
 
 public class CRCClient {
+  public static String xor(String a, String b) {
+    String result = "";
+    for (int i = 1; i < a.length(); i++) {
+      result += (a.charAt(i) == b.charAt(i)) ? "0" : "1";
+    }
+    return result;
+  }
+
+  public static String mod2div(String dividend, String divisor) {
+    int pick = divisor.length();
+    String tmp = dividend.substring(0, pick);
+
+    while (pick < dividend.length()) {
+      if (tmp.charAt(0) == '1') {
+        tmp = xor(divisor, tmp) + dividend.charAt(pick);
+      } else {
+        tmp = xor("0".repeat(divisor.length()), tmp) + dividend.charAt(pick);
+      }
+      pick += 1;
+    }
+
+    if (tmp.charAt(0) == '1') {
+      tmp = xor(divisor, tmp);
+    } else {
+      tmp = xor("0".repeat(divisor.length()), tmp);
+    }
+
+    return tmp;
+  }
+
+  public static String introduceError(String data, int errorIndex) {
+    char[] dataChars = data.toCharArray();
+    dataChars[errorIndex] = (dataChars[errorIndex] == '0') ? '1' : '0';
+    return new String(dataChars);
+  }
+
   public static void main(String[] args) {
-    String host = "localhost";
+    String hostname = "localhost";
     int port = 3000;
-    String data = "Hello, CRC Server!";
 
-    try (Socket socket = new Socket(host, port)) {
-      System.out.println("Connected to the server.");
+    try (Socket socket = new Socket(hostname, port)) {
+      OutputStream output = socket.getOutputStream();
+      PrintWriter writer = new PrintWriter(output, true);
 
-      DataOutputStream output = new DataOutputStream(socket.getOutputStream());
-      DataInputStream input = new DataInputStream(socket.getInputStream());
+      InputStream input = socket.getInputStream();
+      BufferedReader reader = new BufferedReader(new InputStreamReader(input));
 
-      // Calculate CRC checksum
-      CRC32 crc = new CRC32();
-      crc.update(data.getBytes());
-      long crcValue = crc.getValue();
+      String data = "11010011101100"; // Input data
+      String divisor = "1011"; // Generator
 
-      // Send data and checksum to the server
-      output.writeUTF(data);
-      output.writeLong(crcValue);
+      // Append CRC to data
+      int divisorLength = divisor.length();
+      String appendedData = data + "0".repeat(divisorLength - 1);
+      String remainder = mod2div(appendedData, divisor);
+      String transmittedData = data + remainder;
 
-      // Receive server response
-      String response = input.readUTF();
-      System.out.println("Server response: " + response);
+      // Send correct data
+      System.out.println("Sending correct data...");
+      System.out.println("Transmitted data (correct): " + transmittedData);
+      writer.println(transmittedData); // Send correct data
+      writer.println(divisor); // Send divisor
+      String response = reader.readLine(); // Receive response
+      System.out.println("Server Response (correct data): " + response);
 
-    } catch (IOException e) {
-      e.printStackTrace();
+      // Introduce error in data
+      String erroneousData = introduceError(transmittedData, 5); // Flip 5th bit
+      System.out.println("Sending erroneous data...");
+      System.out.println("Transmitted data (erroneous): " + erroneousData);
+      writer.println(erroneousData); // Send incorrect data
+      writer.println(divisor); // Send divisor
+      response = reader.readLine(); // Receive response
+      System.out.println("Server Response (erroneous data): " + response);
+    } catch (IOException ex) {
+      ex.printStackTrace();
     }
   }
 }
